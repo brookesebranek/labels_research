@@ -27,16 +27,42 @@ track_labels_and_window_table<-data.table::foverlaps(track_labels_table, window_
 coverage_and_window_table<-data.table::foverlaps(coverage_table, window_table, nomatch=NULL)
 errors_and_window_table<-data.table::foverlaps(errors_table, window_table, nomatch=NULL)
 library(ggplot2) #must run every time
-ggplot2::ggplot()+geom_path(aes(x=chromStart, y=matches), data=coverage_and_window_table)+
-  geom_segment(aes(x=chromStart, y=mean, xend=chromEnd, yend=mean), color="orange", size=3, data= peaks_and_window_table)+
-  geom_rect(aes(xmin=chromStart, ymin=-Inf, xmax=chromEnd, ymax=Inf, fill=annotation), alpha= 0.25, data=track_labels_and_window_table)+
-  geom_rect(aes(xmin=chromStart, ymin=-Inf, xmax=chromEnd, ymax=Inf), linetype="status", scale_linetype_manual(
+bases_around_error<-1000
+gg<-ggplot2::ggplot()+geom_path(
+  aes(x=chromStart, y=matches), color="gray50", data=coverage_and_window_table)+
+  geom_segment(
+    aes(x=chromStart, y=mean, xend=chromEnd, yend=mean), color="orange", size=3, data= peaks_and_window_table)+
+  geom_rect(aes(
+    xmin=chromStart, ymin=-Inf, xmax=chromEnd, ymax=Inf, fill=annotation), alpha= 0.25, data=track_labels_and_window_table)+
+  geom_rect(aes(
+    xmin=chromStart, ymin=-Inf, xmax=chromEnd, ymax=Inf,  linetype=status), fill="transparent", color="black", size=1,
+            data=errors_and_window_table)+
+  scale_linetype_manual(
+    "error type",
+    values=c(
+      correct=0,
+      "false negative"=3,
+      "false positive"=1))+
+  errors_and_window_table[3 ,coord_cartesian(xlim=c(chromStart-bases_around_error, chromEnd+bases_around_error))]
+png("nov11_.png", width=10, height = 4, units = "in", res = 200)   
+print(gg)
+dev.off()
+gg <- ggplot2::ggplot()+geom_path(
+  aes(x=chromStart, y=matches), color="gray50", data=coverage_and_window_table)+
+  geom_segment(
+    aes(x=chromStart, y=mean, xend=chromEnd, yend=mean), color="orange", size=3, data= peaks_and_window_table)+
+  geom_rect(aes(
+    xmin=chromStart, ymin=-Inf, xmax=chromEnd, ymax=Inf, fill=annotation), alpha= 0.25, data=track_labels_and_window_table)+
+  geom_rect(aes(
+    xmin=chromStart, ymin=-Inf, xmax=chromEnd, ymax=Inf,  linetype=status), fill="transparent", color="black", size=1,
+    data=errors_and_window_table)+
+  scale_linetype_manual(
     "error type",
     values=c(
       correct=0,
       "false negative"=3,
       "false positive"=1))
-    , data=errors_and_window_table)
+plotly::ggplotly(gg)
 
 
 
