@@ -18,15 +18,15 @@ labels_table<-fread(labels_filename, col.names = c(
 track_labels_table<-labels_table[sample_encode==track]
 track_labels_peaks_table<-track_labels_table[, .(chrom, chromStart, chromEnd, track, annotation=sub("noPeak", "noPeaks", annotation))]
 coverage_table<-fread(coverage_filename, col.names = c("chrom", "chromStart", "chromEnd", "matches"))
-errors_frame<-PeakError::PeakError(peaks_table[status=="peak"], track_labels_peaks_table)
-errors_table<-setDT(errors_frame)
-errors_table[status!="correct"]
 data.table::setkey(peaks_table, chrom, chromStart, chromEnd)
 data.table::setkey(track_labels_peaks_table, chrom, chromStart, chromEnd)
 data.table::setkey(coverage_table, chrom, chromStart, chromEnd)
-data.table::setkey(errors_table, chrom, chromStart, chromEnd)
 data.table::setkey(contig_table, chrom, contigStart, contigEnd)
 labels_and_contig_table<-foverlaps(contig_table, track_labels_peaks_table)
+errors_frame<-PeakError::PeakError(peaks_table[status=="peak"], labels_and_contig_table)
+errors_and_correct_frame<-setDT(errors_frame)
+errors_table<-errors_and_correct_frame[status!="correct"]
+data.table::setkey(errors_table, chrom, chromStart, chromEnd)
 #ALL TABLES BEFORE HERE OK
 #
 bases_around_error<-100000
@@ -51,7 +51,7 @@ for(row_of_window in 1:nrow(errors_table)){
       geom_rect(aes(
         xmin=chromStart, ymin=-Inf, xmax=chromEnd, ymax=Inf,  linetype=status), 
         fill="transparent", color="black", size=1,
-        data=errors_table)+
+        data=errors_and_window_table)+
       scale_linetype_manual(
         "error type",
         values=c(
@@ -59,7 +59,7 @@ for(row_of_window in 1:nrow(errors_table)){
           "false negative"=3,
           "false positive"=1))+
       window_table[,coord_cartesian(xlim=c(windowStart, windowEnd))]
-    png(paste0("dec07_errors2.0_", row_of_window, ".png"), width=10, height = 4, units = "in", res = 200)   
+    png(paste0("jan12_errors2.0_", row_of_window, ".png"), width=10, height = 4, units = "in", res = 200)   
     print(gg)
     dev.off()
 }
